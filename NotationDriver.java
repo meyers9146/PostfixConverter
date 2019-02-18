@@ -8,15 +8,12 @@ public class NotationDriver {
 	System.out.println("Enter infix expresson: ");
 	String infix = scan.nextLine();
 	
+	String infix2 = Notation.convertInfixToPostfix(infix);
 	
-	System.out.println("Postfix: " + Notation.convertInfixToPostfix(infix));
 	
-	/*
-	System.out.println("Enter postfix expression for evaluation: ");
-	infix = scan.nextLine();
+	System.out.println("Postfix: " + infix2);
 	
-	System.out.println("Value: " + Notation.evaluatePostfixExpression(infix));
-	*/
+	System.out.println("Back to infix: " + Notation.convertPostfixToInfix(infix2));
 	
 	scan.close();
 	}

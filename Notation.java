@@ -14,7 +14,7 @@ public class Notation {
 	 * @return the postfix-notated expression
 	 */
 	public static String convertInfixToPostfix(String infix) throws ArithmeticException{
-		if(!hasValidCharacters(infix)) throw new IllegalArgumentException(
+		if(!hasValidCharacters(infix)) throw new InvalidNotationFormatException(
 				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
 		if(!isBalanced(infix)) throw new UnbalancedExpressionException();
@@ -74,7 +74,7 @@ public class Notation {
 				
 				case "+" : // + and - operators have lowest precedence, so they get pushed unless there are already + or -
 				case "-" : // operators to begin with
-					while(!operatorStack.isEmpty() && (operatorStack.peek().equals("+") || operatorStack.peek().equals("-"))) {
+					while(!operatorStack.isEmpty() && !isBrace(operatorStack.peek())) {
 						returnString += operatorStack.pop() + " ";
 					}
 					operatorStack.push(strings.get(i));
@@ -82,7 +82,10 @@ public class Notation {
 				
 				case "*" : // *, /, +, and - operators will all push the stack. Only ^ operators have higher precedence
 				case "/" :
-					while(!operatorStack.isEmpty() && (!operatorStack.peek().equals("^"))) {
+					while(!operatorStack.isEmpty() && operatorStack.peek().equals("^")) {
+						returnString += operatorStack.pop() + " ";
+					}
+					while(!operatorStack.isEmpty() && (operatorStack.peek().equals("*") || operatorStack.peek().equals("/"))) {
 						returnString += operatorStack.pop() + " ";
 					}
 					operatorStack.push(strings.get(i));
@@ -131,7 +134,94 @@ public class Notation {
 	 * @param postfix the postfix-notated expression to an infix-notated expression
 	 * @return the infix-notated expression
 	 */
-	public static String convertPostfixtoInfix(String postfix) {
+	public static String convertPostfixToInfix(String postfix) {
+		
+		//Check that the expression contains only valid characters
+		if(!hasValidCharacters(postfix)) throw new InvalidNotationFormatException(
+				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
+		
+		//Check that the expression is balanced in terms of delimiters
+		if(!isBalanced(postfix)) throw new UnbalancedExpressionException();
+		
+		/*
+		Convert the single String to a String array. 
+		First, by splitting the String into characters,
+		Then checking each character for an operator or operand.
+		This separates out multiple-digit and decimal operands as
+		full numbers, instead of single characters
+		*/
+		char[] chars = postfix.toCharArray();
+		ArrayList<String> strings = new ArrayList<>();
+		String nextDoubleString = "";
+		
+		//Look through each character of the char array
+		for (char ch : chars) {
+			//Pull out numbers and decimal points
+			if(Character.isDigit(ch) || ch == '.') {
+				nextDoubleString += ch;
+			}
+
+			//If an operator is encountered, add the previous number
+			//as a discrete String to the String array
+			else {
+				if(nextDoubleString.length() > 0) {
+					strings.add(nextDoubleString);
+					nextDoubleString = "";
+				}
+				
+				//Add the operator to the String array
+				strings.add(Character.toString(ch)); 
+			}
+		}
+		
+		//At conclusion of for loop, add the last Double in sequence (if it exists)
+		if(nextDoubleString.length() > 0) {
+			strings.add(nextDoubleString);
+			nextDoubleString = "";
+		}
+		
+		//Create Stack for operands
+		MyStack<String> operandStack = new MyStack<>();
+		
+		/*
+		Iterate through the String array. Operands will be added to their Stack.
+		As operators are found, pop the previous two operands and add
+		on to the return String to form the infix expression
+		*/
+		for(int i = 0; i < strings.size(); i++) {
+			switch (strings.get(i)) {
+			
+			//Skip whitespace
+			case " " :
+				break;
+			//TODO: this is wrong
+			case "+" :
+			case "-" :
+				String val1 = operandStack.pop();
+				String val2 = operandStack.pop();
+				operandStack.push("(" + val2 + " " + strings.get(i) + " " + val1 + ")");
+				break;
+				
+			case "*" :
+			case "/" :
+				val1 = operandStack.pop();
+				val2 = operandStack.pop();
+				operandStack.push(val2 + " " + strings.get(i) + " " + val1);
+				break;
+				
+			case "^" :
+				val1 = operandStack.pop();
+				val2 = operandStack.pop();
+				operandStack.push(val2 + " ^ " + val1);
+				break;
+				
+			default :
+				operandStack.push(strings.get(i));
+				break;
+			}
+		}
+		
+		return operandStack.peek();
 		
 	}
 	
@@ -208,8 +298,8 @@ public class Notation {
 			
 			Boolean valid = false;
 			
-			//Skip whitespace
-			if (Character.isWhitespace(ch)) continue;
+			//Skip whitespace and decimals
+			if (Character.isWhitespace(ch) || ch == '.') continue;
 			
 			//Check if character is an operand
 			else if (Character.isDigit(ch) || Character.isAlphabetic(ch)) { 
@@ -280,6 +370,17 @@ public class Notation {
 		
 		return isBalanced;
 	}
+	
+	/**
+	 * Determine if a passed String is a single left (open) brace or paren character
+	 * @param str the String to be examined
+	 * @return true if the passed String is a left brace or parenthesis, false otherwise
+	 */
+	public static boolean isBrace(String str) {
+		if (str.equals("(") || str.equals("{") || str.equals("[")) return true;
+		
+		else return false;
+	}
 }
 
 @SuppressWarnings("serial")
@@ -290,6 +391,18 @@ class UnbalancedExpressionException extends ArithmeticException {
 	}
 	
 	public UnbalancedExpressionException(String message) {
+		super(message);
+	}
+}
+
+@SuppressWarnings("serial")
+class InvalidNotationFormatException extends RuntimeException {
+	
+	public InvalidNotationFormatException() {
+		super("The entered expression contains an invalid notation and cannot be processed.");
+	}
+	
+	public InvalidNotationFormatException(String message) {
 		super(message);
 	}
 }
