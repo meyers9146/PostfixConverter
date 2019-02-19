@@ -30,45 +30,16 @@ public class Notation {
 				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
 		//Confirm that the expression does not contain unbalanced parentheses or brackets
-		if(!isBalanced(infix)) throw new UnbalancedExpressionException();
+		if(!isBalanced(infix)) throw new InvalidNotationFormatException();
 		
-		/*
-		Convert the single String to a String array. 
-		First, by splitting the String into characters,
-		Then checking each character for an operator or operand.
-		This separates out multiple-digit and decimal operands as
-		Full numbers, instead of single characters
-		*/
-		char[] chars = infix.toCharArray();
+		
+		//Convert the single String to a String array. 
+		String[] strArray = infix.split("");
 		ArrayList<String> strings = new ArrayList<>();
-		String nextDoubleString = "";
-		
-		//Look through each character of the char array
-		for (char ch : chars) {
-			//Pull out numbers and decimal points
-			if(Character.isDigit(ch) || ch == '.') {
-				nextDoubleString += ch;
-			}
-
-			//If an operator is encountered, add the previous number
-			//as a discrete String to the String array
-			else {
-				if(nextDoubleString.length() > 0) {
-					strings.add(nextDoubleString);
-					nextDoubleString = "";
-				}
+		for (String str : strArray) {
+			strings.add(str);
+		}
 				
-				//Add the operator to the String array
-				strings.add(Character.toString(ch)); 
-			}
-		}
-		
-		//At conclusion of for loop, add the last Double in sequence
-		if(nextDoubleString.length() > 0) {
-			strings.add(nextDoubleString);
-			nextDoubleString = "";
-		}
-		
 		//Create output String
 		String returnString = "";
 		
@@ -88,7 +59,7 @@ public class Notation {
 				case "+" : // + and - operators have lowest precedence, so they get pushed unless there are already + or -
 				case "-" : // operators to begin with
 					while(!operatorStack.isEmpty() && !isBrace(operatorStack.peek())) {
-						returnString += operatorStack.pop() + " ";
+						returnString += operatorStack.pop();
 					}
 					operatorStack.push(strings.get(i));
 				break;
@@ -96,10 +67,10 @@ public class Notation {
 				case "*" : // *, /, +, and - operators will all push the stack. Only ^ operators have higher precedence
 				case "/" :
 					while(!operatorStack.isEmpty() && operatorStack.peek().equals("^")) {
-						returnString += operatorStack.pop() + " ";
+						returnString += operatorStack.pop();
 					}
 					while(!operatorStack.isEmpty() && (operatorStack.peek().equals("*") || operatorStack.peek().equals("/"))) {
-						returnString += operatorStack.pop() + " ";
+						returnString += operatorStack.pop();
 					}
 					operatorStack.push(strings.get(i));
 				break;
@@ -111,28 +82,28 @@ public class Notation {
 				
 				case ")" : // ) parentheses pop all operators until the ( parenthesis is found
 					while(!(operatorStack.peek().equals("("))) {
-						returnString += operatorStack.pop() + " ";
+						returnString += operatorStack.pop();
 					}
 					operatorStack.pop(); //Pop the extra ( when it is found
 				break;
 					
 				case "}" : // } braces pop all operators until the { brace is found
 					while(!(operatorStack.peek().equals("{"))) {
-						returnString += operatorStack.pop() + " ";
+						returnString += operatorStack.pop();
 					}
 					operatorStack.pop(); //Pop the extra { when it is found
 				break;
 				
 				case "]" : // ] brackets pop all operators until the [ bracket is found
 					while(!(operatorStack.peek().equals("["))) {
-						returnString += operatorStack.pop() + " ";
+						returnString += operatorStack.pop();
 					}
 					operatorStack.pop(); //Pop the extra [ when it is found
 				break;
 				
 				//Anything that isn't an operator is by default an operand
 				default:
-					returnString += strings.get(i) + " ";
+					returnString += strings.get(i);
 			}
 		}
 		
@@ -154,43 +125,13 @@ public class Notation {
 				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
 		//Check that the expression is balanced in terms of delimiters
-		if(!isBalanced(postfix)) throw new UnbalancedExpressionException();
+		if(!isBalanced(postfix)) throw new InvalidNotationFormatException();
 		
-		/*
-		Convert the single String to a String array. 
-		First, by splitting the String into characters,
-		Then checking each character for an operator or operand.
-		This separates out multiple-digit and decimal operands as
-		full numbers, instead of single characters
-		*/
-		char[] chars = postfix.toCharArray();
+		//Convert the single String to a String array. 
+		String[] strArray = postfix.split("");
 		ArrayList<String> strings = new ArrayList<>();
-		String nextDoubleString = "";
-		
-		//Look through each character of the char array
-		for (char ch : chars) {
-			//Pull out numbers and decimal points
-			if(Character.isDigit(ch) || ch == '.') {
-				nextDoubleString += ch;
-			}
-
-			//If an operator is encountered, add the previous number
-			//as a discrete String to the String array
-			else {
-				if(nextDoubleString.length() > 0) {
-					strings.add(nextDoubleString);
-					nextDoubleString = "";
-				}
-				
-				//Add the operator to the String array
-				strings.add(Character.toString(ch)); 
-			}
-		}
-		
-		//At conclusion of for loop, add the last Double in sequence (if it exists)
-		if(nextDoubleString.length() > 0) {
-			strings.add(nextDoubleString);
-			nextDoubleString = "";
+		for (String str : strArray) {
+			strings.add(str);
 		}
 		
 		//Create Stack for operands
@@ -212,20 +153,20 @@ public class Notation {
 			case "-" : //To preserve precedence, the result will always be put into parentheses
 				String val1 = operandStack.pop();
 				String val2 = operandStack.pop();
-				operandStack.push("(" + val2 + " " + strings.get(i) + " " + val1 + ")"); //Result pushes back onto stack
+				operandStack.push("(" + val2 + strings.get(i) + val1 + ")"); //Result pushes back onto stack
 				break;
 				
 			case "*" : //Multiply and divide operators operate on the previous two items in the stack
 			case "/" : //Precedence is automatically preserved in this manner
 				val1 = operandStack.pop();
 				val2 = operandStack.pop();
-				operandStack.push(val2 + " " + strings.get(i) + " " + val1); //Result pushes back onto stack
+				operandStack.push("(" + val2 + strings.get(i) + val1 + ")"); //Result pushes back onto stack
 				break;
 				
 			case "^" : //Exponent operator operates on the previous two items in the stack
 				val1 = operandStack.pop();
 				val2 = operandStack.pop();
-				operandStack.push(val2 + " ^ " + val1); //Result pushes back onto stack
+				operandStack.push(val2 + "^" + val1); //Result pushes back onto stack
 				break;
 				
 			default : //Operands go onto the operand stack in the order they are encountered
@@ -251,7 +192,7 @@ public class Notation {
 				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
 		//Confirm that the expression does not have any unbalanced braces or parens
-		if(!isBalanced(infixExpr)) throw new UnbalancedExpressionException();
+		if(!isBalanced(infixExpr)) throw new InvalidNotationFormatException();
 		
 		
 		//Create Stacks for holding operators and operands
@@ -263,35 +204,7 @@ public class Notation {
 		
 		//Create ArrayList for holding String tokens
 		ArrayList<String> strings = new ArrayList<>();
-		
-		//Create empty String for building operands that are found
-		String nextDoubleString = "";
-		
-		//Look through each character of the char array
-		for (char ch : chars) {
-			//Pull out numbers and decimal points
-			if(Character.isDigit(ch) || ch == '.') {
-				nextDoubleString += ch;
-			}
-
-			//If an operator is encountered, add the previous number
-			//as a discrete String to the String array
-			else {
-				if(nextDoubleString.length() > 0) {
-					strings.add(nextDoubleString);
-					nextDoubleString = "";
-				}
-				
-				//Add the operator to the String array
-				strings.add(Character.toString(ch)); 
-			}
-		}
-		
-		//At conclusion of for loop, add the last Double in sequence
-		if(nextDoubleString.length() > 0) {
-			strings.add(nextDoubleString);
-			nextDoubleString = "";
-		}
+		for (char ch : chars) strings.add(Character.toString(ch));
 		
 		//Iterate through the ArrayList of tokens and separate into Stacks
 		for(String str : strings) {
@@ -317,7 +230,7 @@ public class Notation {
 					
 				case "*" :
 				case "/" :
-					if (operators.isEmpty()) operators.push(str);
+					if (operators.isEmpty() || isBrace(operators.peek())) operators.push(str);
 					else {
 						while (!operators.isEmpty() && !(operators.peek().equals("+") || operators.peek().equals("-"))) {
 							String val1 = operands.pop();
@@ -382,7 +295,7 @@ public class Notation {
 				"The expression may only contain numbers/letters, and +, -, *, /, *");
 		
 		//Confirm that the expression does not have any unbalanced braces or parens
-		if(!isBalanced(postfixExpr)) throw new UnbalancedExpressionException();
+		if(!isBalanced(postfixExpr)) throw new InvalidNotationFormatException();
 		
 		//Convert String to a character array
 		char[] chars = postfixExpr.toCharArray();
@@ -390,34 +303,9 @@ public class Notation {
 		//Create ArrayList for holding String tokens
 		ArrayList<String> strings = new ArrayList<>();
 		
-		//Create empty String for building operands that are found
-		String nextDoubleString = "";
+		//Convert the array from characters to Strings
+		for (char ch : chars) strings.add(Character.toString(ch));
 		
-		//Look through each character of the char array
-				for (char ch : chars) {
-					//Pull out numbers and decimal points
-					if(Character.isDigit(ch) || ch == '.') {
-						nextDoubleString += ch;
-					}
-
-					//If an operator is encountered, add the previous number
-					//as a discrete String to the String array
-					else {
-						if(nextDoubleString.length() > 0) {
-							strings.add(nextDoubleString);
-							nextDoubleString = "";
-						}
-						
-						//Add the operator to the String array
-						strings.add(Character.toString(ch)); 
-					}
-				}
-				
-				//At conclusion of for loop, add the last Double in sequence
-				if(nextDoubleString.length() > 0) {
-					strings.add(nextDoubleString);
-					nextDoubleString = "";
-				}
 		
 		//Create Stack for operands
 		MyStack<Double> operandStack = new MyStack<>();
@@ -545,32 +433,37 @@ public class Notation {
 		//Create sentinel Boolean value for returning
 		boolean isBalanced = true;
 		
-		for(char ch : chars) {
-			switch (ch) {
-				
-				//Push any open (left) brace to the stack
-				case '(' : 
-				case '{' :
-				case '[' :
-					openParenStack.push(ch);
-					break;
-				
-				//If a closed (right) brace is found, its opposite must be on the top of the Stack.
-				//If that's not the case, then the expression is not balanced.
-				case ')' :
-					if (!openParenStack.pop().equals('(')) isBalanced = false;
-					break;
-				case '}' :
-					if (!openParenStack.pop().equals('{')) isBalanced = false;
-					break;
-				case ']' :
-					if (!openParenStack.pop().equals('[')) isBalanced = false;
-					break;
+		try {
+			for(char ch : chars) {
+				switch (ch) {
 					
-				//Non-brace characters are ignored	
-				default: 
-					break;
+					//Push any open (left) brace to the stack
+					case '(' : 
+					case '{' :
+					case '[' :
+						openParenStack.push(ch);
+						break;
+					
+					//If a closed (right) brace is found, its opposite must be on the top of the Stack.
+					//If that's not the case, then the expression is not balanced.
+					case ')' :
+						if (!openParenStack.pop().equals('(')) isBalanced = false;
+						break;
+					case '}' :
+						if (!openParenStack.pop().equals('{')) isBalanced = false;
+						break;
+					case ']' :
+						if (!openParenStack.pop().equals('[')) isBalanced = false;
+						break;
+						
+					//Non-brace characters are ignored	
+					default: 
+						break;
+				}
 			}
+		}
+		catch (Exception e) {
+			return false;
 		}
 		
 		return isBalanced;
@@ -618,18 +511,6 @@ public class Notation {
 		}
 		
 		return result;
-	}
-}
-
-@SuppressWarnings("serial")
-class UnbalancedExpressionException extends ArithmeticException {
-	
-	public UnbalancedExpressionException() {
-		super("The expression is unbalanced. Recheck brackets and parentheses and try again");
-	}
-	
-	public UnbalancedExpressionException(String message) {
-		super(message);
 	}
 }
 
