@@ -1,9 +1,20 @@
 import java.util.ArrayList;
 
+/**
+ * Convert mathematical expressions in infix notation (a+b) to postfix notation (ab+) and vice-versa.
+ * Includes methods for evaluating expressions, as well.
+ * 
+ * Version 2.0 - includes support for multiple-digit numbers and decimals 
+ * (operands must be delineated by whitespace when in postfix notation)
+ * 
+ * @author Mike Meyers
+ * @version 2.0
+ *
+ */
 public class Notation {
 	
 	/**
-	 * Default constructor TODO: add more if needed
+	 * Default constructor. Object has no variables to initialize.
 	 */
 	public Notation() {
 	}
@@ -14,9 +25,12 @@ public class Notation {
 	 * @return the postfix-notated expression
 	 */
 	public static String convertInfixToPostfix(String infix) throws ArithmeticException{
+		
+		//Confirm that the expression contains only valid characters
 		if(!hasValidCharacters(infix)) throw new InvalidNotationFormatException(
 				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
+		//Confirm that the expression does not contain unbalanced parentheses or brackets
 		if(!isBalanced(infix)) throw new UnbalancedExpressionException();
 		
 		/*
@@ -194,33 +208,34 @@ public class Notation {
 			//Skip whitespace
 			case " " :
 				break;
-			//TODO: this is wrong
-			case "+" :
-			case "-" :
+			
+			case "+" : //Add and subtract operators operate on the previous two items in the stack
+			case "-" : //To preserve precedence, the result will always be put into parentheses
 				String val1 = operandStack.pop();
 				String val2 = operandStack.pop();
-				operandStack.push("(" + val2 + " " + strings.get(i) + " " + val1 + ")");
+				operandStack.push("(" + val2 + " " + strings.get(i) + " " + val1 + ")"); //Result pushes back onto stack
 				break;
 				
-			case "*" :
-			case "/" :
+			case "*" : //Multiply and divide operators operate on the previous two items in the stack
+			case "/" : //Precedence is automatically preserved in this manner
 				val1 = operandStack.pop();
 				val2 = operandStack.pop();
-				operandStack.push(val2 + " " + strings.get(i) + " " + val1);
+				operandStack.push(val2 + " " + strings.get(i) + " " + val1); //Result pushes back onto stack
 				break;
 				
-			case "^" :
+			case "^" : //Exponent operator operates on the previous two items in the stack
 				val1 = operandStack.pop();
 				val2 = operandStack.pop();
-				operandStack.push(val2 + " ^ " + val1);
+				operandStack.push(val2 + " ^ " + val1); //Result pushes back onto stack
 				break;
 				
-			default :
+			default : //Operands go onto the operand stack in the order they are encountered
 				operandStack.push(strings.get(i));
 				break;
 			}
 		}
 		
+		//We are left with a single Node on the stack, which is our final, full expression
 		return operandStack.peek();
 		
 	}
@@ -231,7 +246,129 @@ public class Notation {
 	 * @return the evaluated expression value
 	 */
 	public static double evaluateInfixExpression(String infixExpr) {
+
+		//Confirm that the expression consists of only valid characters
+		if(!hasValidCharacters(infixExpr)) throw new IllegalArgumentException(
+				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
+		//Confirm that the expression does not have any unbalanced braces or parens
+		if(!isBalanced(infixExpr)) throw new UnbalancedExpressionException();
+		
+		
+		//Create Stacks for holding operators and operands
+		MyStack<String> operands = new MyStack<>();
+		MyStack<String> operators = new MyStack<>();
+		
+		//Convert String to a character array
+		char[] chars = infixExpr.toCharArray();
+		
+		//Create ArrayList for holding String tokens
+		ArrayList<String> strings = new ArrayList<>();
+		
+		//Create empty String for building operands that are found
+		String nextDoubleString = "";
+		
+		//Look through each character of the char array
+		for (char ch : chars) {
+			//Pull out numbers and decimal points
+			if(Character.isDigit(ch) || ch == '.') {
+				nextDoubleString += ch;
+			}
+
+			//If an operator is encountered, add the previous number
+			//as a discrete String to the String array
+			else {
+				if(nextDoubleString.length() > 0) {
+					strings.add(nextDoubleString);
+					nextDoubleString = "";
+				}
+				
+				//Add the operator to the String array
+				strings.add(Character.toString(ch)); 
+			}
+		}
+		
+		//At conclusion of for loop, add the last Double in sequence
+		if(nextDoubleString.length() > 0) {
+			strings.add(nextDoubleString);
+			nextDoubleString = "";
+		}
+		
+		//Iterate through the ArrayList of tokens and separate into Stacks
+		for(String str : strings) {
+			switch (str) {
+				
+				//Skip whitespace
+				case " " : 
+					break;
+			
+				case "+" :
+				case "-" :
+					if (operators.isEmpty()) operators.push(str);
+					else {
+						while (!operators.isEmpty() && (!isBrace(operators.peek()))) {
+							String val1 = operands.pop();
+							String val2 = operands.pop();
+							double result = operate(val1, val2, operators.pop());
+							operands.push(Double.toString(result));
+						}
+						operators.push(str);
+					}
+					break;
+					
+				case "*" :
+				case "/" :
+					if (operators.isEmpty()) operators.push(str);
+					else {
+						while (!operators.isEmpty() && !(operators.peek().equals("+") || operators.peek().equals("-"))) {
+							String val1 = operands.pop();
+							String val2 = operands.pop();
+							double result = operate(val1, val2, operators.pop());
+							operands.push(Double.toString(result));
+						}
+						operators.push(str);
+					}
+					break;
+					
+				case "^" :
+					operators.push(str);
+					break;
+				
+				case "(" : //Open parens and braces go onto the operator stack
+				case "{" :
+				case "[" :
+					operators.push(str);
+					break;
+			
+				case ")" : //When a closed paren or brace is found, go through the operators in the stack and operate
+				case "}" : //on the top two operands of the operand stack. The result goes on top of the operand stack
+				case "]" :
+					while (!isBrace(operators.peek())) {
+						String operator = operators.pop();
+						String val1 = operands.pop();
+						String val2 = operands.pop();
+						double result = operate(val1, val2, operator);
+						operands.push(Double.toString(result));
+					}
+					operators.pop(); //Pop the open brace from the stack once found
+					break;
+				//Operands get pushed onto the stack as they are encountered
+				default:
+					operands.push(str);
+					break;
+			} //end switch
+		} // end for
+		
+		//Once the entire ArrayList is read through, empty the remaining operators in the Stack
+		while (!operators.isEmpty()) {
+			String val1 = operands.pop();
+			String val2 = operands.pop();
+			double result = operate(val1, val2, operators.pop());
+			operands.push(Double.toString(result));
+		}
+		
+		//When everything has been run, we are left with a single item in the operands stack. This is our answer
+		return Double.parseDouble(operands.peek());
 	}
 	
 	/**
@@ -240,21 +377,58 @@ public class Notation {
 	 * @return the evaluated expression value
 	 */
 	public static double evaluatePostfixExpression(String postfixExpr) {
-		if(!hasValidCharacters(postfixExpr)) throw new IllegalArgumentException(
-				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
+		//Confirm that the expression consists of only valid characters
+		if(!hasValidPostfixCharacters(postfixExpr)) throw new IllegalArgumentException(
+				"The expression may only contain numbers/letters, and +, -, *, /, *");
+		
+		//Confirm that the expression does not have any unbalanced braces or parens
 		if(!isBalanced(postfixExpr)) throw new UnbalancedExpressionException();
 		
 		//Convert String to a character array
-		String[] strings = postfixExpr.split(" ");
+		char[] chars = postfixExpr.toCharArray();
 		
+		//Create ArrayList for holding String tokens
+		ArrayList<String> strings = new ArrayList<>();
 		
-		//Create separate Stacks for operators and operands
+		//Create empty String for building operands that are found
+		String nextDoubleString = "";
+		
+		//Look through each character of the char array
+				for (char ch : chars) {
+					//Pull out numbers and decimal points
+					if(Character.isDigit(ch) || ch == '.') {
+						nextDoubleString += ch;
+					}
+
+					//If an operator is encountered, add the previous number
+					//as a discrete String to the String array
+					else {
+						if(nextDoubleString.length() > 0) {
+							strings.add(nextDoubleString);
+							nextDoubleString = "";
+						}
+						
+						//Add the operator to the String array
+						strings.add(Character.toString(ch)); 
+					}
+				}
+				
+				//At conclusion of for loop, add the last Double in sequence
+				if(nextDoubleString.length() > 0) {
+					strings.add(nextDoubleString);
+					nextDoubleString = "";
+				}
+		
+		//Create Stack for operands
 		MyStack<Double> operandStack = new MyStack<>();
 		double result;
 		
 		for (String str : strings) {
 			switch (str) {
+
+			//Skip whitespace
+			case " " : break;
 			case "+" : case "-" : case "*" : case "/" : case "^" :
 				double thisVal = operandStack.pop();
 				double nextVal = operandStack.pop();
@@ -282,7 +456,7 @@ public class Notation {
 				break;
 			}
 		}
-		return operandStack.pop();
+		return operandStack.peek();
 	}
 	
 	/**
@@ -313,6 +487,38 @@ public class Notation {
 			
 			//Check if character is a paren or bracket
 			else if (ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == '[' || ch == ']') {
+				valid = true;
+			}
+			
+			if (valid == false) return false;
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Check if a postfix expression has invalid characters. Functions identically to hasValidCharacters
+	 * except postfix expressions may not contain brackets or parentheses
+	 * @param str the String expression to be evaluated
+	 * @return true if the expression contains valid characters, invalid if there are invalid characters found
+	 */
+	public static boolean hasValidPostfixCharacters(String str) {
+		char[] chars = str.toCharArray();
+		
+		for (char ch : chars) {
+			
+			Boolean valid = false;
+			
+			//Skip whitespace and decimals
+			if (Character.isWhitespace(ch) || ch == '.') continue;
+			
+			//Check if character is an operand
+			else if (Character.isDigit(ch) || Character.isAlphabetic(ch)) { 
+				valid = true;
+			}
+			
+			//Check if character is an operator
+			else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^') {
 				valid = true;
 			}
 			
@@ -380,6 +586,39 @@ public class Notation {
 		if (str.equals("(") || str.equals("{") || str.equals("[")) return true;
 		
 		else return false;
+	}
+	
+	/**
+	 * Evaluate a two-operand expression
+	 * @param stringA the first operand
+	 * @param stringB the second operand
+	 * @param operator the operator indicating the function to be performed
+	 * @return the result of the performed function
+	 */
+	public static double operate(String stringA, String stringB, String operator) {
+		double result = 0;
+		
+		double a = Double.parseDouble(stringA);
+		double b = Double.parseDouble(stringB);
+		
+		switch (operator) {
+			case "+" : 
+				result = a + b;
+				break;
+			case "-" :
+				result = b - a;
+				break;
+			case "*" :
+				result = a * b;
+				break;
+			case "/" :
+				result = b / a;
+				break;
+			case "^" :
+				result = Math.pow(b,  a);
+		}
+		
+		return result;
 	}
 }
 
