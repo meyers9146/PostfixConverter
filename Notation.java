@@ -4,11 +4,10 @@ import java.util.ArrayList;
  * Convert mathematical expressions in infix notation (a+b) to postfix notation (ab+) and vice-versa.
  * Includes methods for evaluating expressions, as well.
  * 
- * Version 2.0 - includes support for multiple-digit numbers and decimals 
- * (operands must be delineated by whitespace when in postfix notation)
+ * Version 1.0 - only works with single-digit numbers, but does not require whitespace delineation for entered expressions
  * 
  * @author Mike Meyers
- * @version 2.0
+ * @version 1.0
  *
  */
 public class Notation {
