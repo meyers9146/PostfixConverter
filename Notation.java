@@ -22,8 +22,9 @@ public class Notation {
 	 * Convert an infix expression to a postfix expression
 	 * @param infix the infix-notated expression to a postfix-notated expression
 	 * @return the postfix-notated expression
+	 * @throws InvalidNotationFormatException if the input String is invalid
 	 */
-	public static String convertInfixToPostfix(String infix) throws ArithmeticException{
+	public static String convertInfixToPostfix(String infix) throws InvalidNotationFormatException{
 		
 		//Confirm that the expression contains only valid characters
 		if(!hasValidCharacters(infix)) throw new InvalidNotationFormatException(
@@ -48,6 +49,7 @@ public class Notation {
 		
 		//Iterate through the String array and sort the tokens
 		for (int i = 0; i < strings.size(); i++) {
+			try {
 			switch (strings.get(i)) {
 				case " " : //skip whitespace characters
 					break;
@@ -104,6 +106,13 @@ public class Notation {
 				//Anything that isn't an operator is by default an operand
 				default:
 					returnString += strings.get(i);
+			} //End for
+			}
+			
+			//If the above operations cause the Stack to underflow, we can assume that the
+			//input string was improperly formatted
+			catch (StackUnderflowException e) {
+				throw new InvalidNotationFormatException();
 			}
 		}
 		
@@ -117,8 +126,9 @@ public class Notation {
 	 * Convert an postfix expression to an infix expression
 	 * @param postfix the postfix-notated expression to an infix-notated expression
 	 * @return the infix-notated expression
+	 * @throws InvalidNotationFormatException if the input String is found to be invalid
 	 */
-	public static String convertPostfixToInfix(String postfix) {
+	public static String convertPostfixToInfix(String postfix) throws InvalidNotationFormatException{
 		
 		//Check that the expression contains only valid characters
 		if(!hasValidCharacters(postfix)) throw new InvalidNotationFormatException(
@@ -134,8 +144,9 @@ public class Notation {
 			strings.add(str);
 		}
 		
-		//Create Stack for operands
+		//Create Stack for operands and variables for operation
 		MyStack<String> operandStack = new MyStack<>();
+		String val1, val2;
 		
 		/*
 		Iterate through the String array. Operands will be added to their Stack.
@@ -143,35 +154,43 @@ public class Notation {
 		on to the return String to form the infix expression
 		*/
 		for(int i = 0; i < strings.size(); i++) {
-			switch (strings.get(i)) {
 			
-			//Skip whitespace
-			case " " :
-				break;
+			try {
+				switch (strings.get(i)) {
+				
+				//Skip whitespace
+				case " " :
+					break;
+				
+				case "+" : //Add and subtract operators operate on the previous two items in the stack
+				case "-" : //To preserve precedence, the result will always be put into parentheses
+					val1 = operandStack.pop();
+					val2 = operandStack.pop();
+					operandStack.push("(" + val2 + strings.get(i) + val1 + ")"); //Result pushes back onto stack
+					break;
+					
+				case "*" : //Multiply and divide operators operate on the previous two items in the stack
+				case "/" : //Precedence is automatically preserved in this manner
+					val1 = operandStack.pop();
+					val2 = operandStack.pop();
+					operandStack.push("(" + val2 + strings.get(i) + val1 + ")"); //Result pushes back onto stack
+					break;
+					
+				case "^" : //Exponent operator operates on the previous two items in the stack
+					val1 = operandStack.pop();
+					val2 = operandStack.pop();
+					operandStack.push(val2 + "^" + val1); //Result pushes back onto stack
+					break;
+					
+				default : //Operands go onto the operand stack in the order they are encountered
+					operandStack.push(strings.get(i));
+					break;
+				}
+			}
 			
-			case "+" : //Add and subtract operators operate on the previous two items in the stack
-			case "-" : //To preserve precedence, the result will always be put into parentheses
-				String val1 = operandStack.pop();
-				String val2 = operandStack.pop();
-				operandStack.push("(" + val2 + strings.get(i) + val1 + ")"); //Result pushes back onto stack
-				break;
-				
-			case "*" : //Multiply and divide operators operate on the previous two items in the stack
-			case "/" : //Precedence is automatically preserved in this manner
-				val1 = operandStack.pop();
-				val2 = operandStack.pop();
-				operandStack.push("(" + val2 + strings.get(i) + val1 + ")"); //Result pushes back onto stack
-				break;
-				
-			case "^" : //Exponent operator operates on the previous two items in the stack
-				val1 = operandStack.pop();
-				val2 = operandStack.pop();
-				operandStack.push(val2 + "^" + val1); //Result pushes back onto stack
-				break;
-				
-			default : //Operands go onto the operand stack in the order they are encountered
-				operandStack.push(strings.get(i));
-				break;
+			//If a pop is attempted on an empty operand stack, the input expression was improperly formatted
+			catch (StackUnderflowException e) {
+				throw new InvalidNotationFormatException();
 			}
 		}
 		
@@ -184,8 +203,9 @@ public class Notation {
 	 * Read an infix-notated expression and evaluate it numerically
 	 * @param infixExpr the infix-notated expression for evaluation
 	 * @return the evaluated expression value
+	 * @throws InvalidNotationFormatException if the input String is found to be invalid
 	 */
-	public static double evaluateInfixExpression(String infixExpr) {
+	public static double evaluateInfixExpression(String infixExpr) throws InvalidNotationFormatException{
 
 		//Confirm that the expression consists of only valid characters
 		if(!hasValidCharacters(infixExpr)) throw new IllegalArgumentException(
@@ -206,8 +226,12 @@ public class Notation {
 		ArrayList<String> strings = new ArrayList<>();
 		for (char ch : chars) strings.add(Character.toString(ch));
 		
+		//Create String variables for holding individual operands
+		String val1, val2;
+		
 		//Iterate through the ArrayList of tokens and separate into Stacks
 		for(String str : strings) {
+			try {
 			switch (str) {
 				
 				//Skip whitespace
@@ -219,8 +243,8 @@ public class Notation {
 					if (operators.isEmpty()) operators.push(str);
 					else {
 						while (!operators.isEmpty() && (!isBrace(operators.peek()))) {
-							String val1 = operands.pop();
-							String val2 = operands.pop();
+							val1 = operands.pop();
+							val2 = operands.pop();
 							double result = operate(val1, val2, operators.pop());
 							operands.push(Double.toString(result));
 						}
@@ -233,8 +257,8 @@ public class Notation {
 					if (operators.isEmpty() || isBrace(operators.peek())) operators.push(str);
 					else {
 						while (!operators.isEmpty() && !(operators.peek().equals("+") || operators.peek().equals("-"))) {
-							String val1 = operands.pop();
-							String val2 = operands.pop();
+							val1 = operands.pop();
+							val2 = operands.pop();
 							double result = operate(val1, val2, operators.pop());
 							operands.push(Double.toString(result));
 						}
@@ -257,8 +281,8 @@ public class Notation {
 				case "]" :
 					while (!isBrace(operators.peek())) {
 						String operator = operators.pop();
-						String val1 = operands.pop();
-						String val2 = operands.pop();
+						val1 = operands.pop();
+						val2 = operands.pop();
 						double result = operate(val1, val2, operator);
 						operands.push(Double.toString(result));
 					}
@@ -269,12 +293,15 @@ public class Notation {
 					operands.push(str);
 					break;
 			} //end switch
-		} // end for
-		
+			} //end try
+		catch (StackUnderflowException e) {
+			throw new InvalidNotationFormatException();
+			}
+		}  // end for
 		//Once the entire ArrayList is read through, empty the remaining operators in the Stack
 		while (!operators.isEmpty()) {
-			String val1 = operands.pop();
-			String val2 = operands.pop();
+			val1 = operands.pop();
+			val2 = operands.pop();
 			double result = operate(val1, val2, operators.pop());
 			operands.push(Double.toString(result));
 		}
@@ -287,8 +314,9 @@ public class Notation {
 	 * Read a postfix-notated expression and evaluate it numerically
 	 * @param postfixExpr the postfix-notated expression for evaluation
 	 * @return the evaluated expression value
+	 * @throws InvalidNotationFormatException if the input String is invalid
 	 */
-	public static double evaluatePostfixExpression(String postfixExpr) {
+	public static double evaluatePostfixExpression(String postfixExpr) throws InvalidNotationFormatException{
 		
 		//Confirm that the expression consists of only valid characters
 		if(!hasValidPostfixCharacters(postfixExpr)) throw new IllegalArgumentException(
@@ -307,9 +335,9 @@ public class Notation {
 		for (char ch : chars) strings.add(Character.toString(ch));
 		
 		
-		//Create Stack for operands
+		//Create Stack for operands and variables for operation
 		MyStack<Double> operandStack = new MyStack<>();
-		double result;
+		double thisVal, nextVal, result;
 		
 		for (String str : strings) {
 			switch (str) {
@@ -317,8 +345,17 @@ public class Notation {
 			//Skip whitespace
 			case " " : break;
 			case "+" : case "-" : case "*" : case "/" : case "^" :
-				double thisVal = operandStack.pop();
-				double nextVal = operandStack.pop();
+				
+				//If a pop is attempted and there were no preceding operands, the entered expression was improperly formatted
+				try {
+					thisVal = operandStack.pop();
+					nextVal = operandStack.pop();
+				}
+				//Pop operations will underflow the Stack if the input string was improperly formatted
+				catch (StackUnderflowException e) {
+					throw new InvalidNotationFormatException();
+				}
+				
 				switch (str) {
 					case "+" : result = nextVal + thisVal;
 					operandStack.push(result);
@@ -433,37 +470,32 @@ public class Notation {
 		//Create sentinel Boolean value for returning
 		boolean isBalanced = true;
 		
-		try {
-			for(char ch : chars) {
-				switch (ch) {
+		for(char ch : chars) {
+			switch (ch) {
+				
+				//Push any open (left) brace to the stack
+				case '(' : 
+				case '{' :
+				case '[' :
+					openParenStack.push(ch);
+					break;
+				
+				//If a closed (right) brace is found, its opposite must be on the top of the Stack.
+				//If that's not the case, then the expression is not balanced.
+				case ')' :
+					if (openParenStack.isEmpty() || !openParenStack.pop().equals('(')) isBalanced = false;
+					break;
+				case '}' :
+					if (openParenStack.isEmpty() || !openParenStack.pop().equals('{')) isBalanced = false;
+					break;
+				case ']' :
+					if (openParenStack.isEmpty() || !openParenStack.pop().equals('[')) isBalanced = false;
+					break;
 					
-					//Push any open (left) brace to the stack
-					case '(' : 
-					case '{' :
-					case '[' :
-						openParenStack.push(ch);
-						break;
-					
-					//If a closed (right) brace is found, its opposite must be on the top of the Stack.
-					//If that's not the case, then the expression is not balanced.
-					case ')' :
-						if (!openParenStack.pop().equals('(')) isBalanced = false;
-						break;
-					case '}' :
-						if (!openParenStack.pop().equals('{')) isBalanced = false;
-						break;
-					case ']' :
-						if (!openParenStack.pop().equals('[')) isBalanced = false;
-						break;
-						
-					//Non-brace characters are ignored	
-					default: 
-						break;
-				}
+				//Non-brace characters are ignored	
+				default: 
+					break;
 			}
-		}
-		catch (Exception e) {
-			return false;
 		}
 		
 		return isBalanced;
