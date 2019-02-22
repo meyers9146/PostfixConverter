@@ -31,7 +31,12 @@ public class Notation {
 				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
 		//Confirm that the expression does not contain unbalanced parentheses or brackets
-		if(!isBalanced(infix)) throw new InvalidNotationFormatException();
+		if(!isBalanced(infix)) throw new InvalidNotationFormatException(
+				"The expression contains unbalanced parentheses or brackets");
+		
+		//Check for improper notation in the form of sequential operator symbols (ex: 5++4)
+		if(hasSequentialOperators(infix)) throw new InvalidNotationFormatException(
+				"The expression may not contain sequential operators");
 		
 		
 		//Convert the single String to a String array. 
@@ -135,7 +140,8 @@ public class Notation {
 				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
 		//Check that the expression is balanced in terms of delimiters
-		if(!isBalanced(postfix)) throw new InvalidNotationFormatException();
+		if(!isBalanced(postfix)) throw new InvalidNotationFormatException(
+				"The expression contains unbalanced parentheses or brackets");
 		
 		//Convert the single String to a String array. 
 		String[] strArray = postfix.split("");
@@ -208,11 +214,16 @@ public class Notation {
 	public static double evaluateInfixExpression(String infixExpr) throws InvalidNotationFormatException{
 
 		//Confirm that the expression consists of only valid characters
-		if(!hasValidCharacters(infixExpr)) throw new IllegalArgumentException(
+		if(!hasValidCharacters(infixExpr)) throw new InvalidNotationFormatException(
 				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
 		//Confirm that the expression does not have any unbalanced braces or parens
-		if(!isBalanced(infixExpr)) throw new InvalidNotationFormatException();
+		if(!isBalanced(infixExpr)) throw new InvalidNotationFormatException(
+				"The expression contains unbalanced parentheses or brackets");
+		
+		//Confirm that the expression does not have any operators in sequence (ex: a++b)
+		if(hasSequentialOperators(infixExpr)) throw new InvalidNotationFormatException(
+				"The expression may not contain sequential operators");
 		
 		
 		//Create Stacks for holding operators and operands
@@ -319,11 +330,12 @@ public class Notation {
 	public static double evaluatePostfixExpression(String postfixExpr) throws InvalidNotationFormatException{
 		
 		//Confirm that the expression consists of only valid characters
-		if(!hasValidPostfixCharacters(postfixExpr)) throw new IllegalArgumentException(
+		if(!hasValidPostfixCharacters(postfixExpr)) throw new InvalidNotationFormatException(
 				"The expression may only contain numbers/letters, and +, -, *, /, *");
 		
 		//Confirm that the expression does not have any unbalanced braces or parens
-		if(!isBalanced(postfixExpr)) throw new InvalidNotationFormatException();
+		if(!isBalanced(postfixExpr)) throw new InvalidNotationFormatException(
+				"The expression contains unbalanced parentheses or brackets");
 		
 		//Convert String to a character array
 		char[] chars = postfixExpr.toCharArray();
@@ -502,13 +514,77 @@ public class Notation {
 	}
 	
 	/**
-	 * Determine if a passed String is a single left (open) brace or paren character
+	 * Check if a String contains two operators in sequence. Used to validate infix expressions
+	 * @param str the String to examine
+	 * @return true if the String has sequential operators. False if the string is properly formatted
+	 */
+	public static boolean hasSequentialOperators(String str) {
+		for (int i = 0; i < str.length() - 1; i++) {
+			
+			//Skip over operand characters
+			if (Character.isDigit(str.charAt(i))) continue;
+			else if (Character.isAlphabetic(str.charAt(i))) continue;
+			
+			//Skip over closed braces
+			else if (isClosedBrace(str.charAt(i))) continue;
+			
+			//Skip over open/closed brace pairs (useless mathematically, but valid)
+			//Note: this does not confirm the braces are balanced. Use isBalanced(str) for balance check
+			else if (isBrace(str.charAt(i)) && (isClosedBrace(str.charAt(i+1)))) continue;
+			
+			//If the character falls under none of the above rules, it must be an open brace or an operator.
+			//As such, it may not be followed by another operator or closed brace (for nonbrace operators)
+			else {
+				if (isOperator(str.charAt(i+1)) || isBrace(str.charAt(i+1))) return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Determine if a given character is an operator symbol. 
+	 * @param ch the character to be examined
+	 * @return true if the character is an operator, false if not
+	 */
+	public static boolean isOperator (char ch) {
+		if (ch == '+' || ch == '-' || ch == '*' || ch == '/') return true;
+		else return false;
+	}
+	
+	/**
+	 * Determine if a passed String is a left (open) brace or paren character
 	 * @param str the String to be examined
-	 * @return true if the passed String is a left brace or parenthesis, false otherwise
+	 * @return true if the passed String is a brace or parenthesis, false otherwise
 	 */
 	public static boolean isBrace(String str) {
 		if (str.equals("(") || str.equals("{") || str.equals("[")) return true;
 		
+		//Return false if no match found
+		else return false;
+	}
+	
+	/**
+	 * Determine if a passed character is a left (open) brace or paren character
+	 * @param ch the character to be examined
+	 * @return true if the passed character is a left brace or parenthesis, false otherwise
+	 */
+	public static boolean isBrace(char ch) {
+		if (ch == '(' || ch == '{' || ch == '[') return true;
+		
+		//Return false if no match
+		else return false;
+	}
+	
+	/**
+	 * Determine if a passed character is a right (closed) brace or paren character
+	 * @param ch the character to be examined
+	 * @return true if the passed character is a right brace or parenthesis, false otherwise
+	 */
+	public static boolean isClosedBrace(char ch) {
+		if (ch == ')' || ch == '}' || ch == ']') return true;
+		
+		//Return false if no match
 		else return false;
 	}
 	
