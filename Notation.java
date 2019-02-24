@@ -139,9 +139,13 @@ public class Notation {
 		if(!hasValidCharacters(postfix)) throw new InvalidNotationFormatException(
 				"The expression may only contain numbers/letters, brackets/parens, and +, -, *, /, *");
 		
-		//Check that the expression is balanced in terms of delimiters
-		if(!isBalanced(postfix)) throw new InvalidNotationFormatException(
-				"The expression contains unbalanced parentheses or brackets");
+		//Check for braces. Postfix notation does not use parentheses or brackets
+		for(int i = 0; i < postfix.length(); i++) {
+			if (isBrace(postfix.charAt(i)) || isClosedBrace(postfix.charAt(i))) {
+				throw new InvalidNotationFormatException(
+						"Postfix notation should not have brackets, braces, or parentheses");
+			}
+		}
 		
 		//Convert the single String to a String array. 
 		String[] strArray = postfix.split("");
@@ -200,8 +204,10 @@ public class Notation {
 			}
 		}
 		
-		//We are left with a single Node on the stack, which is our final, full expression
-		return operandStack.peek();
+		//We are left with a single Node on the stack, which is our final, full expression.
+		//If there are multiple Nodes on the stack, we've run into a notation issue
+		if (operandStack.size() > 1) throw new InvalidNotationFormatException();
+		else return operandStack.peek();
 		
 	}
 	
@@ -317,7 +323,9 @@ public class Notation {
 			operands.push(Double.toString(result));
 		}
 		
-		//When everything has been run, we are left with a single item in the operands stack. This is our answer
+		//When everything has been run, we are left with a single item in the operands stack. This is our answer.
+		//If there is an extra operand on the stack that wasn't used, we've run into an notation problem.
+		if (operands.size() > 1) throw new InvalidNotationFormatException();
 		return Double.parseDouble(operands.peek());
 	}
 	
@@ -333,9 +341,13 @@ public class Notation {
 		if(!hasValidPostfixCharacters(postfixExpr)) throw new InvalidNotationFormatException(
 				"The expression may only contain numbers/letters, and +, -, *, /, *");
 		
-		//Confirm that the expression does not have any unbalanced braces or parens
-		if(!isBalanced(postfixExpr)) throw new InvalidNotationFormatException(
-				"The expression contains unbalanced parentheses or brackets");
+		//Check for braces. Postfix notation does not use parentheses or brackets
+		for(int i = 0; i < postfixExpr.length(); i++) {
+			if (isBrace(postfixExpr.charAt(i)) || isClosedBrace(postfixExpr.charAt(i))) {
+				throw new InvalidNotationFormatException(
+						"Postfix notation should not have brackets, braces, or parentheses");
+			}
+		}
 		
 		//Convert String to a character array
 		char[] chars = postfixExpr.toCharArray();
@@ -392,6 +404,11 @@ public class Notation {
 				break;
 			}
 		}
+		
+		//We are left with a single operand left on the stack, which is our final answer.
+		//If there are additional oeprands left that were not operated upon, then we've run into
+		//a notation problem
+		if(operandStack.size() > 1) throw new InvalidNotationFormatException();
 		return operandStack.peek();
 	}
 	
@@ -528,14 +545,14 @@ public class Notation {
 			//Skip over closed braces
 			else if (isClosedBrace(str.charAt(i))) continue;
 			
-			//Skip over open/closed brace pairs (useless mathematically, but valid)
+			//Skip over brace pairs
 			//Note: this does not confirm the braces are balanced. Use isBalanced(str) for balance check
-			else if (isBrace(str.charAt(i)) && (isClosedBrace(str.charAt(i+1)))) continue;
+			else if (isBrace(str.charAt(i)) && (isBrace(str.charAt(i+1)) || isClosedBrace(str.charAt(i+1)))) continue;
 			
 			//If the character falls under none of the above rules, it must be an open brace or an operator.
 			//As such, it may not be followed by another operator or closed brace (for nonbrace operators)
 			else {
-				if (isOperator(str.charAt(i+1)) || isBrace(str.charAt(i+1))) return true;
+				if (isOperator(str.charAt(i+1)) || isClosedBrace(str.charAt(i+1))) return true;
 			}
 		}
 		
@@ -548,7 +565,7 @@ public class Notation {
 	 * @return true if the character is an operator, false if not
 	 */
 	public static boolean isOperator (char ch) {
-		if (ch == '+' || ch == '-' || ch == '*' || ch == '/') return true;
+		if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^') return true;
 		else return false;
 	}
 	
@@ -622,13 +639,30 @@ public class Notation {
 	}
 }
 
+/**
+ * An Exception class for when the program detects that it has been passed an improperly-formatted
+ * String, either in postfix or infix notation.
+ * 
+ * The individual methods elsewhere in the class can detect specific cases and return relevant messages
+ * for the client to correct their notation. For general catch-all throws, a default message is provided.
+ * 
+ * @author Mike Meyers
+ *
+ */
 @SuppressWarnings("serial")
 class InvalidNotationFormatException extends RuntimeException {
 	
+	/**
+	 * Constructor with default message
+	 */
 	public InvalidNotationFormatException() {
 		super("The entered expression contains an invalid notation and cannot be processed.");
 	}
 	
+	/**
+	 * constructor with a custom message
+	 * @param message The message to pass along with the thrown InvalidNotationFormatException
+	 */
 	public InvalidNotationFormatException(String message) {
 		super(message);
 	}
