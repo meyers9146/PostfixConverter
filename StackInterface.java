@@ -64,6 +64,7 @@ public interface StackInterface<T> {
 	 * Returns the string representation of the elements in the Stack, the beginning of the 
 	 * string is the bottom of the stack
 	 * Place the delimiter between all elements of the Stack
+	 * @param delimiter the String to separate the tokens
 	 * @return string representation of the Stack from bottom to top with elements 
 	 * separated with the delimiter
 	 */

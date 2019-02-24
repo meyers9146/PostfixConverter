@@ -72,6 +72,11 @@ public class MyQueue<T> implements QueueInterface<T>{
 		else return false;
 	}
 
+	/**
+	 * Remove the first object from the queue
+	 * @return the object T that was the first item in the queue
+	 * @throws QueueUnderflowException if there is no data to return (if the queue is empty)
+	 */
 	@Override
 	public T dequeue() throws QueueUnderflowException {
 		//Check if the Queue is empty -- throw an Exception if so
@@ -175,12 +180,16 @@ public class MyQueue<T> implements QueueInterface<T>{
 		
 	}
 	
-	//TODO: comments!
+	/**
+	 * Return a String representation of the data in each Node of the Queue
+	 * @return a single String representing the entire Queue
+	 */
 	@Override
 	public String toString() {
 		Node iteratorNode = firstNode;
 		String returnString = "";
 		
+		//Iterate throught the Queue and add each Node's Data toString() to the returnString
 		for(int i = 0; i < this.size(); i++) {
 			returnString += iteratorNode.data.toString();
 			iteratorNode = iteratorNode.nextNode;
@@ -211,6 +220,12 @@ public class MyQueue<T> implements QueueInterface<T>{
 	}
 }
 
+/**
+ * An Exception class for when an operation tries to add more data to the Queue
+ * than is allowable
+ * @author Mike Meyers
+ *
+ */
 @SuppressWarnings("serial")
 class QueueOverflowException extends RuntimeException{
 	public QueueOverflowException() {
@@ -218,7 +233,12 @@ class QueueOverflowException extends RuntimeException{
 	}
 }
 
-
+/**
+ * An Exception class for when an operation tries to pull data that does not
+ * exist in the Queue
+ * @author Mike Meyers
+ *
+ */
 @SuppressWarnings("serial")
 class QueueUnderflowException extends RuntimeException {
 	public QueueUnderflowException() {

@@ -1,4 +1,3 @@
-package _solution;
 import java.util.ArrayList;
 
 /** Interface for a Queue data structure
@@ -21,8 +20,8 @@ public interface QueueInterface<T> {
 	public boolean isEmpty();
 
 	/**
-	 * Determines of the Queue is empty
-	 * @return
+	 * Determines if the Queue is full
+	 * @return true if the queue is full, or false if not
 	 */
 	public boolean isFull();
 	
@@ -56,6 +55,7 @@ public interface QueueInterface<T> {
 	/**
 	 * Returns the string representation of the elements in the Queue, the beginning of the string is the front of the queue
 	 * Place the delimiter between all elements of the Queue
+	 * @param delimiter the String to delimit the tokens
 	 * @return string representation of the Queue with elements separated with the delimiter
 	 */
 	public String toString(String delimiter);
