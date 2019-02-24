@@ -2,7 +2,7 @@ import java.util.ArrayList;
 
 /**
  * Convert mathematical expressions in infix notation (a+b) to postfix notation (ab+) and vice-versa.
- * Includes methods for evaluating expressions, as well.
+ * Includes methods for evaluating expressions as well.
  * 
  * Version 1.0 - only works with single-digit numbers, but does not require whitespace delineation for entered expressions
  * 
@@ -248,6 +248,9 @@ public class Notation {
 		
 		//Iterate through the ArrayList of tokens and separate into Stacks
 		for(String str : strings) {
+			
+			//Using a try statement as all operations require two pops of the operand stack.
+			//Any invalid notations may be caught when the double-pop throws a StackUnderflowException
 			try {
 			switch (str) {
 				
@@ -255,7 +258,7 @@ public class Notation {
 				case " " : 
 					break;
 			
-				case "+" :
+				case "+" : //+ and - characters operate on the top two operands of the operand stack
 				case "-" :
 					if (operators.isEmpty()) operators.push(str);
 					else {
@@ -269,8 +272,8 @@ public class Notation {
 					}
 					break;
 					
-				case "*" :
-				case "/" :
+				case "*" : //* and / operators operate on the top two operands of the operand stack
+				case "/" : //unless there is a lower-precedence operator already on the operator stack
 					if (operators.isEmpty() || isBrace(operators.peek())) operators.push(str);
 					else {
 						while (!operators.isEmpty() && !(operators.peek().equals("+") || operators.peek().equals("-"))) {
@@ -283,7 +286,7 @@ public class Notation {
 					}
 					break;
 					
-				case "^" :
+				case "^" : //^ gets pushed onto the operator stack
 					operators.push(str);
 					break;
 				
@@ -380,6 +383,7 @@ public class Notation {
 					throw new InvalidNotationFormatException();
 				}
 				
+				//Perform operations as operators are found
 				switch (str) {
 					case "+" : result = nextVal + thisVal;
 					operandStack.push(result);
@@ -457,10 +461,9 @@ public class Notation {
 	 */
 	public static boolean hasValidPostfixCharacters(String str) {
 		char[] chars = str.toCharArray();
+		Boolean valid = false;
 		
 		for (char ch : chars) {
-			
-			Boolean valid = false;
 			
 			//Skip whitespace and decimals
 			if (Character.isWhitespace(ch) || ch == '.') continue;
@@ -475,10 +478,10 @@ public class Notation {
 				valid = true;
 			}
 			
-			if (valid == false) return false;
 		}
 		
-		return true;
+		//Return whether a valid character was found or not
+		return valid;
 	}
 	
 	/**
@@ -536,6 +539,9 @@ public class Notation {
 	 * @return true if the String has sequential operators. False if the string is properly formatted
 	 */
 	public static boolean hasSequentialOperators(String str) {
+		//Remove whitespace present in the string
+		str.replace(" ", "");
+		
 		for (int i = 0; i < str.length() - 1; i++) {
 			
 			//Skip over operand characters
@@ -566,6 +572,8 @@ public class Notation {
 	 */
 	public static boolean isOperator (char ch) {
 		if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^') return true;
+		
+		//Return false if no match found
 		else return false;
 	}
 	
@@ -610,14 +618,16 @@ public class Notation {
 	 * @param stringA the first operand
 	 * @param stringB the second operand
 	 * @param operator the operator indicating the function to be performed
+	 * @throws RuntimeException if an incorrect operator character is passed to the method
 	 * @return the result of the performed function
 	 */
-	public static double operate(String stringA, String stringB, String operator) {
+	public static double operate(String stringA, String stringB, String operator) throws ArithmeticException{
 		double result = 0;
 		
 		double a = Double.parseDouble(stringA);
 		double b = Double.parseDouble(stringB);
 		
+		//Operate on the two variables per the type of operator passed
 		switch (operator) {
 			case "+" : 
 				result = a + b;
@@ -633,6 +643,8 @@ public class Notation {
 				break;
 			case "^" :
 				result = Math.pow(b,  a);
+			default :
+				throw new ArithmeticException ("Incorrect operator passed to operate method");
 		}
 		
 		return result;
